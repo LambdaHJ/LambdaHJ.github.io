@@ -83,17 +83,7 @@
   <div class="article-content">
     <div class="entry">
       
-        <h2 id="从对象说起"><a href="#从对象说起" class="headerlink" title="从对象说起"></a>从对象说起</h2><p>Python中万物皆是对象，只有理解了对象，我们才能算是真正理解Python。对象也是决定python运行机制的关键。<br>由于Python最初是由C语言实现的，而C语言又是一种面向过程的语言，那么Python的对象又是怎么由面向过程的C语言实现的呢？<br>带着这些疑问，我们将逐步揭开Python语言对象的面纱。</p>
-<h2 id="PyObject"><a href="#PyObject" class="headerlink" title="PyObject"></a>PyObject</h2><p>一切对象的根源都在PyObject这个结构体， PyObject是Python对象的核心。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">[object.h]</div><div class="line">typedef struct _object &#123;</div><div class="line">    _PyObject_HEAD_EXTRA</div><div class="line">    Py_ssize_t ob_refcnt;</div><div class="line">    struct _typeobject *ob_type;</div><div class="line">&#125; PyObject;</div></pre></td></tr></table></figure></p>
-<p>PyObject是每个对象都会包含的公共部分，ob_refcnt成员变量是记录对象引用次数的变量，这个变量也是Python内存管理中引用计数机制的基石。<br>_PyObject_HEAD_EXTRA是一个宏定义：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#define _PyObject_HEAD_EXTRA            \</div><div class="line">    struct _object *_ob_next;           \</div><div class="line">    struct _object *_ob_prev;</div></pre></td></tr></table></figure></p>
-<p>Python中所有的对象都是以双向链表的形式在堆中管理的，_ob_next指向下一个对象，_ob_prev指向前一个对象。<br>ob_type是一个结构体指针：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div></pre></td><td class="code"><pre><div class="line">typedef struct _typeobject &#123;</div><div class="line">    PyObject_VAR_HEAD</div><div class="line">    const char *tp_name; /* For printing, in format &quot;&lt;module&gt;.&lt;name&gt;&quot; */</div><div class="line">    Py_ssize_t tp_basicsize, tp_itemsize; /* For allocation */</div><div class="line"></div><div class="line">    /* Methods to implement standard operations */</div><div class="line"></div><div class="line">    destructor tp_dealloc;</div><div class="line">    printfunc tp_print;</div><div class="line">    getattrfunc tp_getattr;</div><div class="line">    setattrfunc tp_setattr;</div><div class="line">    PyAsyncMethods *tp_as_async; /* formerly known as tp_compare (Python 2)</div><div class="line">                                    or tp_reserved (Python 3) */</div><div class="line">    reprfunc tp_repr;</div><div class="line"></div><div class="line">    /* Method suites for standard classes */</div><div class="line"></div><div class="line">    PyNumberMethods *tp_as_number;</div><div class="line">    PySequenceMethods *tp_as_sequence;</div><div class="line">    PyMappingMethods *tp_as_mapping;</div><div class="line"></div><div class="line">    /* More standard operations (here for binary compatibility) */</div><div class="line"></div><div class="line">    hashfunc tp_hash;</div><div class="line">    ternaryfunc tp_call;</div><div class="line">    reprfunc tp_str;</div><div class="line">    getattrofunc tp_getattro;</div><div class="line">    setattrofunc tp_setattro;</div><div class="line"></div><div class="line">    /* Functions to access object as input/output buffer */</div><div class="line">    PyBufferProcs *tp_as_buffer;</div><div class="line"></div><div class="line">    /* Flags to define presence of optional/expanded features */</div><div class="line">    unsigned long tp_flags;</div><div class="line"></div><div class="line">    const char *tp_doc; /* Documentation string */</div><div class="line"></div><div class="line">    /* Assigned meaning in release 2.0 */</div><div class="line">    /* call function for all accessible objects */</div><div class="line">    traverseproc tp_traverse;</div><div class="line"></div><div class="line">    /* delete references to contained objects */</div><div class="line">    inquiry tp_clear;</div><div class="line"></div><div class="line">    /* Assigned meaning in release 2.1 */</div><div class="line">    /* rich comparisons */</div><div class="line">    richcmpfunc tp_richcompare;</div><div class="line"></div><div class="line">    /* weak reference enabler */</div><div class="line">    Py_ssize_t tp_weaklistoffset;</div><div class="line"></div><div class="line">    /* Iterators */</div><div class="line">    getiterfunc tp_iter;</div><div class="line">    iternextfunc tp_iternext;</div><div class="line"></div><div class="line">    /* Attribute descriptor and subclassing stuff */</div><div class="line">    struct PyMethodDef *tp_methods;</div><div class="line">    struct PyMemberDef *tp_members;</div><div class="line">    struct PyGetSetDef *tp_getset;</div><div class="line">    struct _typeobject *tp_base;</div><div class="line">    PyObject *tp_dict;</div><div class="line">    descrgetfunc tp_descr_get;</div><div class="line">    descrsetfunc tp_descr_set;</div><div class="line">    Py_ssize_t tp_dictoffset;</div><div class="line">    initproc tp_init;</div><div class="line">    allocfunc tp_alloc;</div><div class="line">    newfunc tp_new;</div><div class="line">    freefunc tp_free; /* Low-level free-memory routine */</div><div class="line">    inquiry tp_is_gc; /* For PyObject_IS_GC */</div><div class="line">    PyObject *tp_bases;</div><div class="line">    PyObject *tp_mro; /* method resolution order */</div><div class="line">    PyObject *tp_cache;</div><div class="line">    PyObject *tp_subclasses;</div><div class="line">    PyObject *tp_weaklist;</div><div class="line">    destructor tp_del;</div><div class="line"></div><div class="line">    /* Type attribute cache version tag. Added in version 2.6 */</div><div class="line">    unsigned int tp_version_tag;</div><div class="line"></div><div class="line">    destructor tp_finalize;</div><div class="line"></div><div class="line">#ifdef COUNT_ALLOCS</div><div class="line">    /* these must be last and never explicitly initialized */</div><div class="line">    Py_ssize_t tp_allocs;</div><div class="line">    Py_ssize_t tp_frees;</div><div class="line">    Py_ssize_t tp_maxalloc;</div><div class="line">    struct _typeobject *tp_prev;</div><div class="line">    struct _typeobject *tp_next;</div><div class="line">#endif</div><div class="line">&#125; PyTypeObject;</div><div class="line">#endif</div></pre></td></tr></table></figure></p>
-<p>这个结构体是真正决定Python对象是哪种对象（int, string, tuple, dict), PyTypeObject不仅定义了对象的类型，还定义了这个类型支持<br>的所有操作。</p>
-<p>Python中对象大致分为两种，一种是可变对象，一种是不可变对象，可变对象是在PyVarObject中定义的<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">typedef struct &#123;</div><div class="line">    PyObject ob_base;</div><div class="line">    Py_ssize_t ob_size; /* Number of items in variable part */</div><div class="line">&#125; PyVarObject;</div></pre></td></tr></table></figure></p>
-<p>相比PyObject多了一个ob_size变量，这个变量是记录可变对象中元素的个数。</p>
-<p>Python中常见的对象的几种操作：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#define Py_REFCNT(ob)           (((PyObject*)(ob))-&gt;ob_refcnt)     // 引用次数</div><div class="line">#define Py_TYPE(ob)             (((PyObject*)(ob))-&gt;ob_type)       // 对象类型</div><div class="line">#define Py_SIZE(ob)             (((PyVarObject*)(ob))-&gt;ob_size)    // 可变对象的元素个数</div></pre></td></tr></table></figure></p>
-<h2 id="PyTypeObject"><a href="#PyTypeObject" class="headerlink" title="PyTypeObject"></a>PyTypeObject</h2><p>PyTypeObject是Python中的类型对象，每个对象中都包含一个类型对象，这个对象是指定PyObject属于哪中类型的对象。<br>PyTypeObject第一个成员变量是PyObject_VAR_HEAD, 这个变量是什么呢？我们先查看一下定义：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">#define PyObject_VAR_HEAD      PyVarObject ob_base;</div></pre></td></tr></table></figure></p>
-<p>没错，它就可变对象PyVarObject，这也就是说类型对象也是可变对象。</p>
-
+        <h2 id="从对象说起"><a href="#从对象说起" class="headerlink" title="从对象说起"></a>从对象说起</h2><p>Python中万物皆是对象，只有理解了对象，我们才能算是真正理解Python。对象也是决定Python运行机制的关键。<br>由于Python最初是由C语言实现的，而C语言又是一种面向过程的语言，那么Python的对象又是怎么由面向过程的C语言实现的呢？<br>带着这些疑问，我们将逐步揭开Python语言对象的面纱。<br>
       
     </div>
 
@@ -103,7 +93,21 @@
     <div class="article-meta pull-left">
 
     
+      
 
+    <span class="post-categories">
+      <i class="icon-categories"></i>
+        <a href="/categories/python/">python</a>
+    </span>
+    
+
+    
+    
+
+    <span class="post-tags">
+      <i class="icon-tags"></i>
+        <a href="/tags/python3-6源码/">python3.6源码</a>
+    </span>
     
 
     </div>
@@ -147,16 +151,7 @@
   <div class="article-content">
     <div class="entry">
       
-        <p>我的第一篇文章</p>
-<h2 id="快速开始"><a href="#快速开始" class="headerlink" title="快速开始"></a>快速开始</h2><h3 id="创建新文章"><a href="#创建新文章" class="headerlink" title="创建新文章"></a>创建新文章</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo new <span class="string">"名字"</span></div></pre></td></tr></table></figure>
-<p>更多信息: <a href="https://hexo.io/docs/writing.html" target="_blank" rel="external">Writing</a></p>
-<h3 id="启动服务"><a href="#启动服务" class="headerlink" title="启动服务"></a>启动服务</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo server</div></pre></td></tr></table></figure>
-<p>更多信息: <a href="https://hexo.io/docs/server.html" target="_blank" rel="external">Server</a></p>
-<h3 id="产生静态文件"><a href="#产生静态文件" class="headerlink" title="产生静态文件"></a>产生静态文件</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo generate</div></pre></td></tr></table></figure>
-<p>更多信息: <a href="https://hexo.io/docs/generating.html" target="_blank" rel="external">Generating</a></p>
-<h3 id="提交到远程"><a href="#提交到远程" class="headerlink" title="提交到远程"></a>提交到远程</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ hexo deploy</div></pre></td></tr></table></figure>
-<p>更多信息: <a href="https://hexo.io/docs/deployment.html" target="_blank" rel="external">Deployment</a></p>
-
+        <p>我的第一篇文章<br>
       
     </div>
 
@@ -204,6 +199,17 @@
   </p>
 </footer>
     
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-104062557-1', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
   </div>
 </div>
 </body>
